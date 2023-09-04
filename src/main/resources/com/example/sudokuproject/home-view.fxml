@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="840.0" prefWidth="1280.0" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sudokuproject.HelloController">
+<children>
+   <Label alignment="CENTER" layoutX="544.0" layoutY="240.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="256.0" prefWidth="192.0" text="Sudoku" AnchorPane.leftAnchor="544.0" AnchorPane.topAnchor="180.0">
+      <font>
+         <Font name="Arial Bold" size="48.0" />
+      </font>
+   </Label>
+   <Button onAction="#onHelloButtonClick" text="Continue" AnchorPane.rightAnchor="419.0" AnchorPane.topAnchor="505.0" />
+   <Button onAction="#onHelloButtonClick" text="New Game" AnchorPane.leftAnchor="419.0" AnchorPane.topAnchor="505.0" />
+</children>
+</AnchorPane>
