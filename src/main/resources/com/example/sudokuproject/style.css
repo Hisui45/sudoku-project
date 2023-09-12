@@ -1,0 +1,24 @@
+.defaultBorder{
+    -fx-border-color: gray;
+   /* -fx-border-style: solid solid solid solid; */
+}
+
+.edgeXBorder{
+    -fx-border-color: gray black gray gray;
+     /* -fx-border-style: solid solid solid solid; */
+}
+
+.edgeYBorder{
+    -fx-border-color: gray gray black gray;
+     /* -fx-border-style: none solid solid none; */
+}
+
+.innerCornerBorder{
+    -fx-border-color: gray black black gray;
+     /* -fx-border-style: none solid solid none; */
+}
+
+.middleBottomBorder{
+    -fx-border-color: gray gray black gray;
+   /* -fx-border-style: none solid none solid; */
+}

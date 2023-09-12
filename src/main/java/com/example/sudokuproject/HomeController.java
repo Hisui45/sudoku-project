@@ -18,7 +18,9 @@ public class HomeController {
     protected void onNewButtonClick() throws IOException {
         Stage stage = (Stage) newBtn.getScene().getWindow();
         Parent fxmlLoader = FXMLLoader.load(getClass().getResource("game-view.fxml"));
+
         stage.getScene().setRoot(fxmlLoader);
+
         stage.show();
 
     }

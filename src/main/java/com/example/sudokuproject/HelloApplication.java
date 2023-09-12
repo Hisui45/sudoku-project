@@ -12,6 +12,7 @@ public class HelloApplication extends Application {
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("home-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1180, 740);
+        scene.getStylesheets().add(getClass().getResource("style.css").toExternalForm());
         stage.setTitle("Sudoku-Project");
         stage.setScene(scene);
         stage.show();

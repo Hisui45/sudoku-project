@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
@@ -7,49 +8,54 @@
 
 <AnchorPane prefHeight="740.0" prefWidth="1180.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sudokuproject.GameController">
 <children>
-      <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="540.0" layoutX="320.0" layoutY="100.0" stroke="BLACK" strokeType="INSIDE" width="540.0" AnchorPane.topAnchor="100.0" />
+      <GridPane fx:id="board" alignment="CENTER" focusTraversable="true" layoutX="320.0" layoutY="98.0" nodeOrientation="LEFT_TO_RIGHT" prefHeight="540.0" prefWidth="540.0" style="-fx-border-color: black;" AnchorPane.topAnchor="104.0">
+         <opaqueInsets>
+            <Insets />
+         </opaqueInsets></GridPane>
    <Label alignment="CENTER" layoutX="14.0" layoutY="-89.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="256.0" prefWidth="192.0" text="Sudoku" AnchorPane.leftAnchor="14.0" AnchorPane.topAnchor="-89.0">
       <font>
          <Font name="Arial Bold" size="48.0" />
       </font>
    </Label>
-      <HBox layoutX="288.0" layoutY="665.0" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="50.0" spacing="11.0" AnchorPane.leftAnchor="288.0" AnchorPane.topAnchor="665.0">
+      <HBox layoutX="318.0" layoutY="656.0" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="50.0" spacing="11.0" AnchorPane.leftAnchor="318.0" AnchorPane.topAnchor="656.0">
          <children>
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="1">
-               <font>
-                  <Font size="10.0" />
-               </font></Button>
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="2" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="3" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="3" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="4" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="5" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="6" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="7" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="8" />
-            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="9" />
+            <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="1" />
+            <Button mnemonicParsing="false" onAction="#onTwoButtonClick" prefHeight="50.0" prefWidth="50.0" text="2" />
+            <Button mnemonicParsing="false" onAction="#onThreeButtonClick" prefHeight="50.0" prefWidth="50.0" text="3" />
+            <Button mnemonicParsing="false" onAction="#onFourButtonClick" prefHeight="50.0" prefWidth="50.0" text="4" />
+            <Button mnemonicParsing="false" onAction="#onFiveButtonClick" prefHeight="50.0" prefWidth="50.0" text="5" />
+            <Button mnemonicParsing="false" onAction="#onSixButtonClick" prefHeight="50.0" prefWidth="50.0" text="6" />
+            <Button mnemonicParsing="false" onAction="#onSevenButtonClick" prefHeight="50.0" prefWidth="50.0" text="7" />
+            <Button mnemonicParsing="false" onAction="#onEightButtonClick" prefHeight="50.0" prefWidth="50.0" text="8" />
+            <Button mnemonicParsing="false" onAction="#onNineButtonClick" prefHeight="50.0" prefWidth="50.0" text="9" />
          </children>
       </HBox>
-      <HBox layoutX="797.0" layoutY="71.0" prefHeight="28.0" prefWidth="62.0">
+      <HBox alignment="TOP_RIGHT" layoutX="699.0" layoutY="71.0" prefHeight="28.0" prefWidth="160.0" spacing="5.0">
          <children>
-            <SVGPath fx:id="timerSVG" content="M40,60 C42,48 44,30 25,32" />
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="1:03">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Text>
-         </children>
-      </HBox>
-      <HBox layoutX="725.0" layoutY="71.0" prefHeight="28.0" prefWidth="62.0">
-         <children>
-            <SVGPath fx:id="errorSVG" content="M40,60 C42,48 44,30 25,32" stroke="#df424200" strokeLineCap="BUTT" />
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="3">
+            <StackPane prefHeight="25.0" prefWidth="25.0">
+               <children>
+                  <SVGPath fx:id="errorSVG" content="M18 6L6 18M6 6L18 18" fill="TRANSPARENT" stroke="#ff5c5c" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2.0" />
+               </children>
+            </StackPane>
+            <Label fx:id="errorLabel" text="3">
                <font>
                   <Font size="18.0" />
                </font>
-            </Text>
+            </Label>
+            <StackPane fx:id="timerStack" prefHeight="23.0" prefWidth="23.0">
+               <children>
+                  <SVGPath fx:id="timerLayer1" content="M12 7.5V3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 8.87958 4.58803 6.11452 7 4.5" fill="TRANSPARENT" stroke="#1b1d1f" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2.0" />
+                  <SVGPath fx:id="timerLayer11" content="M8 9L11.7123 12.7123" fill="TRANSPARENT" layoutX="23.0" layoutY="13.0" stroke="#1b1d1f" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2.0" />
+               </children>
+            </StackPane>
+            <Label fx:id="timerLabel" text="0:00">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
          </children>
       </HBox>
-      <Button layoutX="320.0" layoutY="72.0" mnemonicParsing="false" text="Undo" />
+      <Button fx:id="undoBtn" layoutX="320.0" layoutY="72.0" mnemonicParsing="false" onAction="#onUndoButtonClick" prefHeight="25.0" prefWidth="25.0" style="-fx-background-color: transparent;" />
+      <Button layoutX="239.0" layoutY="374.0" mnemonicParsing="false" text="Start" onAction="#onStartButtonClick" />
 </children>
 </AnchorPane>
