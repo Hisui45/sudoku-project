@@ -17,7 +17,14 @@
          <Font name="Arial Bold" size="48.0" />
       </font>
    </Label>
-      <HBox layoutX="318.0" layoutY="656.0" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="50.0" spacing="11.0" AnchorPane.leftAnchor="318.0" AnchorPane.topAnchor="656.0">
+   <Label alignment="CENTER" layoutX="14.0" layoutY="-89.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="256.0" prefWidth="192.0" text="Sudoku" AnchorPane.leftAnchor="14.0" AnchorPane.topAnchor="-89.0">
+      <font>
+         <Font name="Arial Bold" size="48.0" />
+      </font>
+   </Label>
+   <ProgressBar fx:id="loadBar" layoutX="490.0" layoutY="402.0" prefWidth="200.0" progress="0.0" />
+   <Label fx:id="generatingLabel" layoutX="544.0" layoutY="362.0" text="Generating Puzzle" AnchorPane.leftAnchor="544.0" AnchorPane.topAnchor="362.0" />
+      <HBox fx:id="numbersBox" layoutX="318.0" layoutY="656.0" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="50.0" spacing="11.0" AnchorPane.leftAnchor="318.0" AnchorPane.topAnchor="656.0">
          <children>
             <Button mnemonicParsing="false" onAction="#onOneButtonClick" prefHeight="50.0" prefWidth="50.0" text="1" />
             <Button mnemonicParsing="false" onAction="#onTwoButtonClick" prefHeight="50.0" prefWidth="50.0" text="2" />
@@ -30,14 +37,14 @@
             <Button mnemonicParsing="false" onAction="#onNineButtonClick" prefHeight="50.0" prefWidth="50.0" text="9" />
          </children>
       </HBox>
-      <HBox alignment="TOP_RIGHT" layoutX="699.0" layoutY="71.0" prefHeight="28.0" prefWidth="160.0" spacing="5.0">
+      <HBox fx:id="utilBox" alignment="TOP_RIGHT" layoutX="699.0" layoutY="71.0" prefHeight="28.0" prefWidth="160.0" spacing="5.0">
          <children>
             <StackPane prefHeight="25.0" prefWidth="25.0">
                <children>
                   <SVGPath fx:id="errorSVG" content="M18 6L6 18M6 6L18 18" fill="TRANSPARENT" stroke="#ff5c5c" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2.0" />
                </children>
             </StackPane>
-            <Label fx:id="errorLabel" text="3">
+            <Label fx:id="errorLabel" text="0">
                <font>
                   <Font size="18.0" />
                </font>
@@ -56,6 +63,6 @@
          </children>
       </HBox>
       <Button fx:id="undoBtn" layoutX="320.0" layoutY="72.0" mnemonicParsing="false" onAction="#onUndoButtonClick" prefHeight="25.0" prefWidth="25.0" style="-fx-background-color: transparent;" />
-      <Button layoutX="239.0" layoutY="374.0" mnemonicParsing="false" text="Start" onAction="#onStartButtonClick" />
+      <Button fx:id="homeBtn" layoutX="1140.0" layoutY="14.0" mnemonicParsing="false" onAction="#onHomeButtonClick" prefHeight="25.0" prefWidth="25.0" style="-fx-background-color: transparent;" />
 </children>
 </AnchorPane>

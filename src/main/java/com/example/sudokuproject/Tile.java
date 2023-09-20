@@ -1,12 +1,8 @@
 package com.example.sudokuproject;
 
-import javafx.geometry.Insets;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Paint;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
-
-public class Tile extends StackPane {
+public class Tile extends StackPane{
     private int currentNumber;
     private int correctNumber;
     private Text number;
@@ -20,27 +16,40 @@ public class Tile extends StackPane {
         this.currentNumber = currentNumber;
         this.x = x;
         this.y = y;
+
+
     }
     public Tile(int currentNumber, int correctNumber, int x, int y, int boardSize){
         //Set Numbers
         this.currentNumber = currentNumber;
         this.correctNumber = correctNumber;
 
+        correct = false;
+
         //Create Tile Components
         int tileSize = (540 / boardSize);
         this.setMinSize(tileSize,tileSize);
 
-        if(currentNumber == 0){
-            this.setStyle("-fx-background-color: white");
-            number = new Text("0");
-            correct = false;
+        //Number Tile Component
+
+        if(currentNumber != 0){
+
+            number = new Text(String.valueOf(currentNumber));
+            if (currentNumber == correctNumber) {
+                this.setStyle("-fx-background-color: lightgray");
+                correct = true;
+            }else{
+                this.setStyle("-fx-background-color: red");
+                correct = false;
+            }
         }else{
-            this.setStyle("-fx-background-color: gray");
-            number = new Text(String.valueOf(correctNumber));
-            correct = true;
+            number = new Text("");
+            this.setStyle("-fx-background-color: white");
         }
+
         number.disableProperty().setValue(true);
         this.getChildren().addAll(number);
+
 
         //Set Tile Location
         this.x = x;
@@ -57,8 +66,9 @@ public class Tile extends StackPane {
     public boolean setCurrentNumber(int currentNumber) {
         this.currentNumber = currentNumber;
         if (currentNumber == 0) {
-            number.setText("0");
+            number.setText("");
             this.setStyle("-fx-background-color: white");
+            correct = false;
         }else{
             number.setText(String.valueOf(currentNumber));
         }
@@ -78,17 +88,24 @@ public class Tile extends StackPane {
 
     public boolean checkTile(){
         if(currentNumber == 0){
+            correct = false;
             return false;
         }else if (currentNumber != correctNumber){
-        //    this.setStyle("-fx-background-color: red");
+            this.setStyle("-fx-background-color: red");
+            correct = false;
             return true;
         }else if(currentNumber == correctNumber){
-         //   this.setStyle("-fx-background-color: darkgray");
+            this.setStyle("-fx-background-color: lightgray");
             correct = true;
         }
 
         return false;
 
+    }
+
+
+    public boolean isCorrect(){
+        return correct;
     }
 
     //Optimized for size changes

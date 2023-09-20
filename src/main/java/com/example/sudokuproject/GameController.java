@@ -2,20 +2,29 @@ package com.example.sudokuproject;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.FillRule;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Random;
@@ -25,73 +34,173 @@ public class GameController {
 
     @FXML
     private Label timerLabel;
-    int time;
     @FXML
     private Label errorLabel;
-    private int errorCount ;
     @FXML
-    private Button undoBtn;
+    private Button undoBtn,homeBtn;
     @FXML
     private GridPane board;
-    private ArrayList<ArrayList<Tile>> tileBoard;
+    @FXML
+    private HBox utilBox;
+    @FXML
+    private HBox numbersBox;
+    @FXML
+    private ProgressBar loadBar;
+    @FXML
+    private Label generatingLabel;
+
+    private TileBoard tileBoard;
+    private int time;
+    private int errorCount;
     private ArrayDeque<Tile> undoStack;
     private Tile selectedTile;
-    private int size;
-
-    private ArrayList<Integer> startingNumbers;
-
-    private ArrayList<ArrayList<ArrayList<Integer>>> invalidOptions;
-
-
-    private ArrayList<ArrayList<Integer>> startingBoard;
-    private ArrayList<ArrayList<Integer>> rowBoard;
-    private ArrayList<ArrayList<Integer>> columnBoard;
-    private ArrayList<ArrayList<Integer>> quadrantBoard;
-    private ArrayList<ArrayList<Integer>> diagonalBoard;
-
-    public GameController() {
-
-    }
+    private final int SIZE = 9;
 
     @FXML
-    public void initialize(){
+    public void initialize() {
+
+        loadBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+        changeVisibility(false);
         setUndoBtn();
-        setUtilities();
-        createBoard();
-        setDiagonals();
+        setHomeBtn();
+
+        ArrayList<ArrayList<String>> boardData = null;
+
+        try {
+            FileInputStream fileIn = new FileInputStream("data");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+
+            Object obj = objectIn.readObject();
+            if (obj instanceof ArrayList) {
+                boardData = (ArrayList<ArrayList<String>>) obj;
+                objectIn.close();
+            }
+
+        } catch (FileNotFoundException e) {
+            boardData = null;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        if (boardData != null) {
+            ArrayList<String> gameDetails = boardData.get(boardData.size()-1);
+            time = Integer.parseInt(gameDetails.get(0));
+            errorCount = Integer.parseInt(gameDetails.get(1));
+            boardData.remove(boardData.size()-1);
+            tileBoard = new TileBoard(boardData);
+            ContinueThread continueThread = new ContinueThread();
+            continueThread.start();
+        }else{
+            SolutionThread solutionThread = new SolutionThread();
+            solutionThread.start();
+        }
+
+
+
+    }
+
+    public class SolutionThread extends Thread {
+        public void run() {
+
+            setDiagonals();
+            setBoard();
+            Platform.runLater(
+                    () -> {
+                        createBoard();
+                        createPuzzle();
+                        time = 0;
+                        errorCount = 0;
+                        setUtilities();
+                        changeVisibility(true);
+                        allowKeyUse();
+                    }
+            );
+
+        }
+    }
+
+    public class ContinueThread extends Thread {
+        public void run() {
+
+            Platform.runLater(
+                    () -> {
+                        createBoard();
+                        setUtilities();
+                        changeVisibility(true);
+                        allowKeyUse();
+                    }
+            );
+
+        }
     }
 
 
-    @FXML
-    protected void onStartButtonClick(){
-        setBoard();
 
+    public void allowKeyUse(){
+        Stage stage = (Stage) board.getScene().getWindow();
+
+        stage.getScene().setOnKeyPressed(event -> {
+            int buttonValue = 0;
+            switch (event.getCode()) {
+                case DIGIT1:    buttonValue = 1; break;
+                case DIGIT2:    buttonValue = 2; break;
+                case DIGIT3:    buttonValue = 3; break;
+                case DIGIT4:    buttonValue = 4; break;
+                case DIGIT5:    buttonValue = 5; break;
+                case DIGIT6:    buttonValue = 6; break;
+                case DIGIT7:    buttonValue = 7; break;
+                case DIGIT8:    buttonValue = 8; break;
+                case DIGIT9:    buttonValue = 9; break;
+            }
+
+            try {
+                buttonOperations(buttonValue);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+        });
     }
+    public void changeVisibility(boolean visibility){
+        board.setVisible(visibility);
+        undoBtn.setVisible(visibility);
+        homeBtn.setVisible(visibility);
+        utilBox.setVisible(visibility);
+        numbersBox.setVisible(visibility);
 
+        loadBar.setVisible(!visibility);
+        generatingLabel.setVisible(!visibility);
+    }
     public void setUtilities(){
         undoStack = new ArrayDeque<>();
-        time = 0;
-        errorCount = 0;
+        errorLabel.setText(String.valueOf(errorCount));
+        timerLabel.setText(formatTime(time));
         setTimer();
     }
+
+    public String formatTime(int time){
+        if(time >= 3600) {
+            return String.format("%02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60);
+
+        }else if(time < 600){
+            return String.format("%01d:%02d", (time % 3600) / 60, time % 60);
+        }else{
+            return String.format("%02d:%02d", (time % 3600) / 60, time % 60);
+        }
+
+    }
     public void setTimer(){
-//Code Snippet from https://stackoverflow.com/questions/50766244/creating-a-timer-that-shows-the-time-in-hhmmss-format-javafx
-//Modified to meet needs
+    /**Code Snippet from https://stackoverflow.com/questions/50766244/creating-a-timer-that-shows-the-time-in-hhmmss-format-javafx
+    Modified to meet needs */
         Timeline timeline = new Timeline(
                 new KeyFrame(Duration.seconds(1), (ActionEvent event) -> {
                     time++;
-                    if(time >= 3600) {
-                        timerLabel.setText(String.format("%02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60));
-
-                    }else if(time < 600){
-                        timerLabel.setText(String.format("%01d:%02d", (time % 3600) / 60, time % 60));
-                    }else{
-                        timerLabel.setText(String.format("%02d:%02d", (time % 3600) / 60, time % 60));
-                    }
+                    timerLabel.setText(formatTime(time));
                 }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
-//
+
     }
     public void setUndoBtn(){
         SVGPath undoSVG = new SVGPath();
@@ -104,211 +213,56 @@ public class GameController {
         undoBtn.setGraphic(undoSVG);
         undoBtn.getStyleClass().add("undoButton");
     }
+    public void setHomeBtn(){
+        SVGPath homeSVG = new SVGPath();
+        homeSVG.setContent("M4.16138 10.2151C4.05852 10.3098 4 10.4432 4 10.583V19.3636C4 19.3636 4 19.3636 4 19.3636C4 19.3636 4 21 5.6 21C7.2 21 18.4 21 18.4 21C18.4 21 18.4 21 18.4 21C18.4 21 20 21 20 19.3636C20 17.8942 20 11.8062 20 10.5796C20 10.4398 19.9415 10.3098 19.8386 10.2151L12.3386 3.31168C12.1472 3.13553 11.8528 3.13553 11.6614 3.31168L4.16138 10.2151Z");
+        homeSVG.setStroke(Color.web("#1B1D1F"));
+        homeSVG.setStrokeWidth(2);
+        homeSVG.setFillRule(FillRule.EVEN_ODD);
+        homeSVG.setFill(Paint.valueOf("transparent"));
+        homeBtn.setGraphic(homeSVG);
+
+
+    }
+    /** Method: createBoard()
+     *  Sets up and fills solution into board  */
     public void createBoard(){
-        tileBoard = new ArrayList<>();
-        invalidOptions = new ArrayList<>();
+        for(int x = 0; x < 9; x++){
+
+            ArrayList<Tile> column = tileBoard.get(x);
+
+            for(int y = 0; y < 9; y++){
+                Tile currentTile = column.get(y);
+                board.add(currentTile, x, y);
+            }
+
+        }
+
         board.setOnMouseClicked(onTileClicked);
 
-        size = 9;
-        for(int x = 0; x <size; x++) {
-            ArrayList<Tile> columns = new ArrayList<>();
-
-            ArrayList<ArrayList<Integer>> square = new ArrayList<>();
-            tileBoard.add(columns);
-            invalidOptions.add(square);
-            for (int y = 0; y < size; y++) {
-                Tile tile = new Tile(0, 0, x, y,size);
-                board.add(tile,x,y);
-                tileBoard.get(x).add(tile);
-                ArrayList<Integer> numbers = new ArrayList<>();
-                square.add(numbers);
-            }
-        }
-
     }
-
-
     public void clearSolutions(){
-        tileBoard = new ArrayList<>();
-        invalidOptions = new ArrayList<>();
-        size = 9;
-        for(int x = 0; x <size; x++) {
-            ArrayList<Tile> columns = new ArrayList<>();
-
-            ArrayList<ArrayList<Integer>> square = new ArrayList<>();
-            tileBoard.add(columns);
-            invalidOptions.add(square);
-            for (int y = 0; y < size; y++) {
-                Tile tile = new Tile(0, 0, x, y,size);
-                board.add(tile,x,y);
-                tileBoard.get(x).add(tile);
-                ArrayList<Integer> numbers = new ArrayList<>();
-                square.add(numbers);
-            }
-        }
+            tileBoard = new TileBoard(SIZE);
     }
-    public void printBoard(){
-        size = 9;
-        for(int y = 0; y <size; y++) {
-            ArrayList<Tile> columns = new ArrayList<>();
-            tileBoard.add(columns);
-                System.out.println();
-            for (int x = 0; x < size; x++) {
-                System.out.print(tileBoard.get(x).get(y).getCurrentNumber());
-            }
-        }
-    }
-
-    public ArrayList<Integer> getRowNumbers(int y){
-        ArrayList<Integer> row = new ArrayList<>();
-        for(int x = 0; x<9; x++){
-            int number = tileBoard.get(x).get(y).getCorrectNumber();
-            row.add(number);
-        }
-
-        return row;
-    }
-
-    public ArrayList<Integer> getColumnNumbers(int x){
-        ArrayList<Integer> column = new ArrayList<>();
-
-        for(int y = 0; y<9; y++){
-            int number = tileBoard.get(x).get(y).getCorrectNumber();
-            column.add(number);
-        }
-
-        return column;
-    }
-
-    public  ArrayList<Integer> getQuadrantNumbers(int x, int y){
-        ArrayList<Integer> quadrant = new ArrayList<>();
-        int quadrantCol = x - (x % 3);
-        int quadrantRow = y - (y % 3);
-
-        for(int i = quadrantRow; i < quadrantRow+3; i++){
-
-            for(int j = quadrantCol; j < quadrantCol+3; j++){
-
-                quadrant.add(tileBoard.get(j).get(i).getCurrentNumber());
-
-            }
-
-        }
-
-        return quadrant;
-
-    }
-
-    public boolean removeNumber(int number){
-        int indexRow = 0;
-        boolean matchRow = false;
-        for (int i = 0; i < startingNumbers.size(); i++) {
-            if(startingNumbers.get(i) == number){
-                matchRow = true;
-                indexRow = i;
-            }
-        }
-        if(matchRow){
-            startingNumbers.remove(indexRow);
-            return true;
-        }
-
-        return false;
-    }
-
-    public int selectRandomNumber(){
-        Random random = new Random();
-        if(startingNumbers.size() > 1){
-            return random.nextInt(startingNumbers.size());
-        }
-        return 0;
-    }
-
-    public void refreshNumbers(){
-        startingNumbers = new ArrayList<>();
-        for(int x = 1; x <= 9; x++){
-            startingNumbers.add(x);
-        }
-    }
-
-    public void refreshNumbers(ArrayList<Integer> compare, ArrayList<Integer> triedNumbers){
-        refreshNumbers();
-        ArrayList<Integer> removeNumbers = new ArrayList<>();
-
-
-
-        for(Integer removeNumber: removeNumbers){
-            startingNumbers.remove(removeNumber);
-        }
-
-        for (Integer number: startingNumbers ) {
-
-            for(Integer triedNumber : triedNumbers){
-                if(number.equals(triedNumber)){
-                    removeNumbers.add(number);
-                }
-            }
-        }
-
-        for(Integer removeNumber: removeNumbers){
-            startingNumbers.remove(removeNumber);
-        }
-    }
-
-    public void refreshNumbers(int x, int y){
-        refreshNumbers();
-        ArrayList<Integer> removeNumbers = new ArrayList<>();
-        for (Integer number: startingNumbers ) {
-
-            for(Integer columnNumber : getColumnNumbers(x)){
-
-                if(number.equals(columnNumber)){
-
-                    removeNumbers.add(number);
-                }
-            }
-
-            for(Integer rowNumber : getRowNumbers(y)){
-                if(number.equals(rowNumber)){
-                    removeNumbers.add(number);
-                }
-            }
-
-            for(Integer quadrantNumber : getQuadrantNumbers(x,y)){
-                if(number.equals(quadrantNumber)){
-                    removeNumbers.add(number);
-                }
-            }
-
-            for(Integer invalidOptions : invalidOptions.get(x).get(y)){
-                if(number.equals(invalidOptions)){
-                    removeNumbers.add(number);
-                }
-            }
-        }
-
-        for(Integer removeNumber: removeNumbers){
-            startingNumbers.remove(removeNumber);
-        }
-
-    }
-
     public void setDiagonals() {
+
+        tileBoard = new TileBoard(SIZE);
+
         //Set initial coordinates
         int x = 0;
         int y = 0;
 
         //Fill in number choices
-        refreshNumbers();
+        tileBoard.refreshNumbers();
 
         //Set numbers for left to right diagonal
         while(x<9){
             boolean duplicate = true;
             while(duplicate){
                 //Generate random number
-                int number = startingNumbers.get(selectRandomNumber());
+                int number = tileBoard.selectRandomNumber();
                 //Check if number exists on board already; if not set on board
-                if(removeNumber(number)){
+                if(tileBoard.removeNumber(number)){
                     tileBoard.get(x).get(y).setCorrectNumber(number);
                     tileBoard.get(x).get(y).setCurrentNumber(number);
                     tileBoard.get(x).get(y).setDiagonalTile(true);
@@ -316,21 +270,13 @@ public class GameController {
                     y++;
                     duplicate = false;
 
-                }else{
-//                    System.out.println(startingNumbers);
-//                    System.out.println("This number: "+ number + " is a duplicate in diagonal at "+x+","+y);
                 }
             }
 
         }
 
-
-
     }
-
-
     public void setBoard(){
-        int restarted = -1;
         boolean unsolved = true;
         while(unsolved){
             clearSolutions();
@@ -338,13 +284,10 @@ public class GameController {
             boolean solution = generateSolution();
             if(solution){
                 unsolved = false;
-            }else{
-                restarted++;
             }
         }
 
     }
-
     public boolean generateSolution(){
         int y = 0;
         int x;
@@ -358,7 +301,7 @@ public class GameController {
 
             while(x < 9 && valid){
                 Tile currentTile = tileBoard.get(x).get(y);
-                refreshNumbers(x,y);
+                tileBoard.refreshNumbers(x,y);
 
                 if(x == 0 && y == 0){
                     if(restarted > 1000){
@@ -388,16 +331,16 @@ public class GameController {
                     }
                 }else{
                     //Square is not a diagonal
-                    refreshNumbers(x, y);
+                    tileBoard.refreshNumbers(x, y);
 
-                    if (startingNumbers.size() > 0) {
+                    if (tileBoard.getStartingNumbers().size() > 0) {
 
                         //Options to Choose From
                         if (tileBoard.get(x).get(y).getCorrectNumber() == 0) {
 
                             //Square is already blank
                             //All numbers should be valid
-                            int number = startingNumbers.get(selectRandomNumber());
+                            int number = tileBoard.selectRandomNumber();
 
                             currentTile.setCorrectNumber(number);
                             currentTile.setCurrentNumber(number);
@@ -407,11 +350,11 @@ public class GameController {
                             //Square is not blank, and it's not a diagonal, means we've moved back but there are other options
 
                             //Value should be stored in invalid options
-                            invalidOptions.get(x).get(y).add(currentTile.getCurrentNumber());
+                            tileBoard.getSquareInvalidOptions(x,y).add(currentTile.getCurrentNumber());
 
-                            refreshNumbers(x,y);
+                            tileBoard.refreshNumbers(x,y);
 
-                            int number = startingNumbers.get(selectRandomNumber());
+                            int number = tileBoard.selectRandomNumber();
 
                             currentTile.setCorrectNumber(number);
                             currentTile.setCurrentNumber(number);
@@ -448,6 +391,184 @@ public class GameController {
         }
 
     }
+    public void createPuzzle(){
+        //EASY 36 - 45 clues
+        Random random = new Random();
+
+        int randomRange = random.nextInt(8)+1;
+
+//        int clues = 36 + randomRange;
+
+        int clues = 65 + randomRange;
+
+        int removeAmount = 81 - clues;
+
+        int x;
+        int y;
+
+        for(int i = 0; i < removeAmount; i++){
+            x = random.nextInt(8)+1;
+            y = random.nextInt(8)+1;
+            tileBoard.get(x).get(y).setCurrentNumber(0);
+        }
+
+    }
+
+    EventHandler<MouseEvent> onTileClicked = mouseEvent -> {
+        if (mouseEvent.getTarget() instanceof Tile){
+            Tile tile = (Tile) mouseEvent.getTarget();
+            selectedTile = tile;
+        }
+    };
+
+    public Tile getSelectedTile(){
+        return selectedTile;
+    }
+
+    @FXML
+    protected void onUndoButtonClick(){
+        if(!undoStack.isEmpty()){
+            Tile undoTile = undoStack.removeLast();
+            tileBoard.get(undoTile.getX()).get(undoTile.getY()).setCurrentNumber(undoTile.getCurrentNumber());
+        }
+    }
+
+    @FXML
+    protected  void onHomeButtonClick() throws IOException {
+
+        SaveTileBoard();
+        Stage stage = (Stage) homeBtn.getScene().getWindow();
+        Parent fxmlLoader = FXMLLoader.load(getClass().getResource("home-view.fxml"));
+
+        stage.getScene().setRoot(fxmlLoader);
+
+        stage.show();
+    }
+
+    public void addToUndoStack(){
+        Tile copyTile = new Tile(getSelectedTile().getCurrentNumber(), getSelectedTile().getX(), getSelectedTile().getY());
+        undoStack.add(copyTile);
+    }
+
+    public void updateTile(int btnNum){
+        boolean wrong = getSelectedTile().setCurrentNumber(btnNum);
+        if(wrong){
+            errorCount++;
+            errorLabel.setText(String.valueOf(errorCount));
+        }
+    }
+
+    public void checkBoard() throws IOException {
+        boolean solvedBoard = true;
+        for(int x = 0; x < 9; x++){
+
+            ArrayList<Tile> column = tileBoard.get(x);
+
+            for(int y = 0; y < 9; y++){
+                Tile currentTile = column.get(y);
+
+                if(!currentTile.isCorrect()){
+                    solvedBoard = false;
+                }
+            }
+
+        }
+
+        if(solvedBoard){
+            File file = new File("data");
+            file.delete();
+            Stage stage = (Stage) board.getScene().getWindow();
+            Parent fxmlLoader = FXMLLoader.load(getClass().getResource("end-view.fxml"));
+            stage.getScene().setRoot(fxmlLoader);
+            stage.show();
+        }
+    }
+
+
+    public void buttonOperations(int btnNum) throws IOException {
+        addToUndoStack();
+        updateTile(btnNum);
+        checkBoard();
+    }
+
+    @FXML
+    protected void onOneButtonClick() throws IOException {
+        buttonOperations(1);
+    }
+    @FXML
+    protected void onTwoButtonClick() throws IOException {
+        buttonOperations(2);
+    }
+    @FXML
+    protected void onThreeButtonClick() throws IOException {
+        buttonOperations(3);
+
+    }
+    @FXML
+    protected void onFourButtonClick() throws IOException {
+        buttonOperations(4);
+
+    }
+    @FXML
+    protected void onFiveButtonClick() throws IOException {
+        buttonOperations(5);
+    }
+    @FXML
+    protected void onSixButtonClick() throws IOException {
+        buttonOperations(6);
+    }
+    @FXML
+    protected void onSevenButtonClick() throws IOException {
+        buttonOperations(7);
+    }
+    @FXML
+    protected void onEightButtonClick() throws IOException {
+        buttonOperations(8);
+    }
+    @FXML
+    protected void onNineButtonClick() throws IOException {
+        buttonOperations(9);
+    }
+
+    public void SaveTileBoard() {
+
+        ArrayList<ArrayList<String>> data = new ArrayList<>();
+
+        for(int x = 0; x < 9; x++){
+
+            ArrayList<Tile> column = tileBoard.get(x);
+            ArrayList<String> dataColumn = new ArrayList<>();
+            data.add(dataColumn);
+            for(int y = 0; y < 9; y++){
+                Tile currentTile = column.get(y);
+                dataColumn.add(currentTile.getCurrentNumber()+" "+ currentTile.getCorrectNumber());
+
+            }
+
+        }
+
+        ArrayList<String> gameDetails = new ArrayList<>();
+
+        gameDetails.add(String.valueOf(time));
+        System.out.println(String.valueOf(time));
+        gameDetails.add(String.valueOf(errorCount));
+        data.add(gameDetails);
+        try {
+
+            FileOutputStream fileOut = new FileOutputStream("data");
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(data);
+            objectOut.close();
+            System.out.println("The Object  was successfully written to a file");
+            System.out.println(data);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
+
+
 /** Third Try */
 //    public void setBoard(){
 //
@@ -777,88 +898,6 @@ public class GameController {
 //    }
 
 
-    EventHandler<MouseEvent> onTileClicked = mouseEvent -> {
-                if (mouseEvent.getTarget() instanceof Tile){
-                    Tile tile = (Tile) mouseEvent.getTarget();
-                    selectedTile = tile;
-                }
-    };
 
-    public Tile getSelectedTile(){
-        return selectedTile;
-    }
-
-    @FXML
-    protected void onUndoButtonClick(){
-        if(!undoStack.isEmpty()){
-            Tile undoTile = undoStack.removeLast();
-            tileBoard.get(undoTile.getX()).get(undoTile.getY()).setCurrentNumber(undoTile.getCurrentNumber());
-        }
-
-    }
-
-    public void addToUndoStack(){
-        Tile copyTile = new Tile(getSelectedTile().getCurrentNumber(), getSelectedTile().getX(), getSelectedTile().getY());
-        undoStack.add(copyTile);
-    }
-
-    public void updateTile(int btnNum){
-        boolean wrong = getSelectedTile().setCurrentNumber(btnNum);
-        if(wrong){
-            errorCount++;
-            errorLabel.setText(String.valueOf(errorCount));
-        }
-    }
-    @FXML
-    protected void onOneButtonClick() {
-        addToUndoStack();
-        updateTile(1);
-    }
-
-    @FXML
-    protected void onTwoButtonClick() {
-        addToUndoStack();
-        updateTile(2);
-    }
-
-    @FXML
-    protected void onThreeButtonClick() {
-        addToUndoStack();
-        updateTile(3);
-
-    }
-
-    @FXML
-    protected void onFourButtonClick() {
-        addToUndoStack();
-        updateTile(4);
-
-    }
-    @FXML
-    protected void onFiveButtonClick() {
-        addToUndoStack();
-        updateTile(5);
-    }
-    @FXML
-    protected void onSixButtonClick() {
-        addToUndoStack();
-        updateTile(6);
-    }
-    @FXML
-    protected void onSevenButtonClick() {
-        addToUndoStack();
-        updateTile(7);
-    }
-
-    @FXML
-    protected void onEightButtonClick() {
-        addToUndoStack();
-        updateTile(8);
-    }
-    @FXML
-    protected void onNineButtonClick() {
-        addToUndoStack();
-        updateTile(9);
-    }
 
 }
